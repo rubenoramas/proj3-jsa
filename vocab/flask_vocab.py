@@ -118,18 +118,48 @@ def check():
        return flask.redirect(flask.url_for("keep_going"))
 
 ###############
-# AJAX request handlers
-#   These return JSON, rather than rendering pages.
+# AJAX request handler
+#   Returns JSON instead of rendering or redirecting.
 ###############
 
 
-@app.route("/_example")
-def example():
+@app.route("/_check")
+def check():
     """
-    Example ajax request handler
+    The browser sends the typed word as ?text=... when the user
+    presses Enter. We reply with JSON saying whether it was a new
+    valid word, a message, the words found so far, and progress.
     """
-    app.logger.debug("Got a JSON request")
-    rslt = {"key": "value"}
+    text = flask.request.args.get("text", "", type=str)
+    jumble = flask.session["jumble"]
+    matches = flask.session.get("matches", [])
+
+    in_jumble = LetterBag(jumble).contains(text)
+    matched = WORDS.has(text)
+
+    if matched and in_jumble and not (text in matches):
+        matches.append(text)
+        flask.session["matches"] = matches
+        valid = True
+        message = "Nice, you found it!"
+    elif text in matches:
+        valid = False
+        message = "You already found {}".format(text)
+    elif not matched:
+        valid = False
+        message = "{} isn't in the list of words".format(text)
+    else:
+        valid = False
+        message = '"{}" can\'t be made from the letters {}'.format(text, jumble)
+
+    target = flask.session["target_count"]
+    rslt = {
+        "valid": valid,
+        "message": message,
+        "matches": matches,
+        "remaining": max(target - len(matches), 0),
+        "solved": len(matches) >= target,
+    }
     return flask.jsonify(result=rslt)
 
 
