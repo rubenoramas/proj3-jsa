@@ -70,7 +70,7 @@
   </div>
   </div><div class="row">
   <div class="col-xs-6 text-center lead">
-    <strong>{{ session.jumble }}</strong>
+     <strong>{{ session.jumble }}</strong>
   </div>
   </div><div class="row">
   <div class="col-xs-6 text-center">
@@ -80,36 +80,41 @@
 <br />
 <div class="row">
   <div class="col-xs-6 text-center">
-  <form id="entry" method="POST" action="/_check">
-    <label for="attempt">Word:</label>
-    <input id="attempt" name="attempt" type="text" width="15"
-      autocomplete="off"  autofocus />
-    <input type="submit" name="try" />
+  <form id="entry">
+     <label for="attempt">Word:</label>
+     <input id="attempt" name="attempt" type="text" width="15"
+    autocomplete="off"  autofocus />
   </form>
 </div></div>
 
 <br />
 
-{% if session.matches|length is not equalto 0  %}
-<h2>You found </h2>
+<p id="message" class="message"></p>
+
+<h2>You found</h2>
 <p id="results">
-  {% for match in session.matches %}
-  {{ match }} 
-  {% endfor %}
+  {% for match in session.matches %}{{ match }} {% endfor %}
 </p>
-{% endif %}
 
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <!-- Mismatch, already found, etc. "flashed" from Python -->
-    {% for message in messages %}
-      <p class="message">{{ message }}</p>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+<script>
+$("#entry").submit(function(event) {
+  event.preventDefault();               // stop the page reload
+  var txt = $("#attempt").val();        // what the user typed
 
+  $.getJSON("/_check", { text: txt }, function(data) {
+    var rslt = data.result;
+    $("#message").text(rslt.message);
+    $("#results").text(rslt.matches.join(" "));
 
-
+    if (rslt.solved) {
+      window.location.href = "/success";
+    } else if (rslt.valid) {
+      $("#attempt").val("");            // clear only on a new valid word
+    }
+  });
+});
+</script>
+     
  </div> <!-- container -->
 </body> </html>
